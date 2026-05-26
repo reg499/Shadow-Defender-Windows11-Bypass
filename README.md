@@ -43,34 +43,49 @@ Windows blocks execution based on the **filename** matched by `apphelp.dll`. By:
 
 | Requirement | Details |
 |---|---|
-| **OS** | Windows 10 or Windows 11 (any version, including 24H2) |
+| **OS** | Windows 10 or Windows 11 (any version, including 24H2 / 25H2) |
 | **PowerShell** | 5.1 or later (built into Windows) |
-| **7-Zip** | Must be installed — [download here](https://7-zip.org) |
-| **Shadow Defender** | Official installer from [shadowdefender.com](https://www.shadowdefender.com) |
-| **Privileges** | Must run as Administrator |
+| **Internet** | Needed only the first time (to fetch 7-Zip and the installer) |
+
+> Everything else — 7-Zip, the Shadow Defender installer itself, and the Administrator elevation — is handled by the script. **As of v2.0 you do not need to install anything before running it.**
 
 ---
 
 ## Usage
 
-### Option A — Automatic (recommended)
+### Option A — One click (recommended)
 
-1. Place `Install-ShadowDefender.ps1` in the **same folder** as your Shadow Defender `.exe` installer.
-2. Open **PowerShell as Administrator**.
-3. Run:
+1. Download this repo (or just `Install-ShadowDefender.cmd` and `Install-ShadowDefender.ps1`).
+2. **Double-click `Install-ShadowDefender.cmd`**.
+3. Click **Yes** on the UAC prompt.
+4. Complete the Shadow Defender setup wizard when it appears.
+
+That's it. The script will, in order:
+
+- Re-launch itself as Administrator.
+- Install 7-Zip silently if it isn't present (via `winget`, or by downloading the official MSI).
+- Download `SD1.5.0.726_Setup.exe` from `shadowdefender.com` if it isn't already next to the script.
+- Perform the double-extract + rename bypass and launch the installer.
+- Clean up every temporary file it created.
+
+### Option B — From PowerShell
 
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force
-.\Install-ShadowDefender.ps1
+powershell -ExecutionPolicy Bypass -File .\Install-ShadowDefender.ps1
 ```
 
-The script will auto-detect the installer file and ask for confirmation.
+### Option C — Use an installer you already have
 
-### Option B — Specify installer path manually
+If you've already downloaded the Shadow Defender installer, drop the `.exe` next to the script (it will be auto-detected) or pass the path explicitly:
 
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force
-.\Install-ShadowDefender.ps1 -InstallerPath ".\SD1.5.0.726_Setup.exe"
+.\Install-ShadowDefender.ps1 -InstallerPath "C:\Users\You\Downloads\SD1.5.0.726_Setup.exe"
+```
+
+Add `-NoDownload` if you want to make sure the script never reaches the internet for the installer:
+
+```powershell
+.\Install-ShadowDefender.ps1 -NoDownload
 ```
 
 ### After installation
@@ -82,11 +97,14 @@ Reboot your system. Shadow Defender should appear in your system tray and Start 
 ## What the script does — step by step
 
 ```
+[0]   Self-elevates via UAC if not already Administrator
+[0]   Installs 7-Zip (winget or direct MSI) if it isn't present
+[0]   Downloads the official installer if no local copy is found
 [1/4] Extracts the outer installer  →  finds Setup_x64.exe
 [2/4] Extracts Setup_x64.exe        →  finds the real setup.exe inside
 [3/4] Copies setup.exe as sdcore_installer.exe  (bypasses the blocklist)
 [4/4] Runs sdcore_installer.exe     →  normal installation UI appears
-      Cleans up all temp files automatically
+      Cleans up all temp files (and any auto-downloaded installer)
 ```
 
 ---
